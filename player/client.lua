@@ -793,3 +793,136 @@ RegisterCommand("manobras",function(raw,args)
 		TriggerEvent("Notify","importante","Você está parou de fazer manobras")
 	end
 end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- DENSITY CONTROLLER (FPS BOOST)
+-----------------------------------------------------------------------------------------------------------------------------------------
+Citizen.CreateThread(function()
+    while true do
+        -- Densidade configurada baixa para otimização (0.1 a 0.5 é recomendado para RP)
+        local density = 0.4 
+        
+        SetParkedVehicleDensityMultiplierThisFrame(density)
+        SetVehicleDensityMultiplierThisFrame(density)
+        SetRandomVehicleDensityMultiplierThisFrame(density)
+        SetPedDensityMultiplierThisFrame(density)
+        SetScenarioPedDensityMultiplierThisFrame(density, density) -- Caminhando e Cenário
+        
+        -- Remove armas dos NPCs (Evita que caiam armas no chão)
+        RemoveAllPickupsOfType(0xDF711959) -- Carbine
+        RemoveAllPickupsOfType(0xF9AFB48F) -- Pistol
+        RemoveAllPickupsOfType(0xA9355DCD) -- Shotgun
+
+        -- Desativa sons de sirene ambiente
+        DistantCopCarSirens(false)
+        
+        Citizen.Wait(0)
+    end
+end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- NO HIP FIRE & NO PISTOL WHIP (Correções de Combate)
+-----------------------------------------------------------------------------------------------------------------------------------------
+Citizen.CreateThread(function()
+    while true do
+        local idle = 1000
+        local ped = PlayerPedId()
+        
+        if IsPedArmed(ped, 6) then
+            idle = 5
+            
+            -- Desativa Tiro sem Mirar (Hip Fire)
+            if not IsPlayerFreeAiming(PlayerId()) then
+                DisableControlAction(0, 140, true) -- Melee Attack Light
+                DisableControlAction(0, 141, true) -- Melee Attack Heavy
+                DisableControlAction(0, 142, true) -- Melee Attack Alternate
+            end
+            
+            -- Desativa Coronhada (Dano Melee com arma na mão)
+            if IsPedInMeleeCombat(ped) then
+                DisableControlAction(0, 263, true) 
+                DisableControlAction(0, 140, true) 
+                DisableControlAction(0, 141, true) 
+                DisableControlAction(0, 142, true) 
+            end
+        end
+        
+        Citizen.Wait(idle)
+    end
+end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- AUTO DELETE BROKEN/EMPTY VEHICLES (Otimização)
+-----------------------------------------------------------------------------------------------------------------------------------------
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(60000) -- Executa a cada 1 minuto
+        local vehicles = GetGamePool('CVehicle')
+        for _, vehicle in ipairs(vehicles) do
+            -- Se o veículo não tem motorista E (está de cabeça para baixo OU explodido)
+            if DoesEntityExist(vehicle) then 
+                if GetPedInVehicleSeat(vehicle, -1) == 0 then
+                    -- Se estiver quebrado/inutilizável
+                    if IsEntityUpsidedown(vehicle) or GetVehicleEngineHealth(vehicle) <= 0 or IsVehicleTyreBurst(vehicle, 0, false) and IsVehicleTyreBurst(vehicle, 1, false) then
+                        -- Tenta deletar usando a função que criamos anteriormente
+                        tvRP.deleteVehicle(vehicle)
+                    end
+                    
+                    -- OPCIONAL: Deletar qualquer carro vazio longe de players
+                    -- (Requer cálculo de distância, pode ser perigoso se não configurado bem, então deixei só os quebrados por segurança)
+                end
+            end
+        end
+    end
+end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- SISTEMA DE PONTO (CLIENT)
+-----------------------------------------------------------------------------------------------------------------------------------------
+local pontoLocais = {
+    { x = 441.83, y = -982.05, z = 30.69, text = "PONTO DA POLÍCIA" }, -- DP Mission Row
+    { x = 299.12, y = -597.51, z = 43.28, text = "PONTO DO HOSPITAL" }, -- Hospital Pillbox
+    { x = -347.11, y = -133.32, z = 39.01, text = "PONTO DA MECÂNICA" }, -- Mecânica LSC
+    -- Adicione mais locais aqui: { x = X, y = Y, z = Z, text = "NOME" },
+}
+
+-- Função para desenhar Texto 3D
+function DrawText3D(x,y,z, text)
+    local onScreen,_x,_y=World3dToScreen2d(x,y,z)
+    local px,py,pz=table.unpack(GetGameplayCamCoords())
+    
+    SetTextScale(0.35, 0.35)
+    SetTextFont(4)
+    SetTextProportional(1)
+    SetTextColour(255, 255, 255, 215)
+    SetTextEntry("STRING")
+    SetTextCentre(1)
+    AddTextComponentString(text)
+    DrawText(_x,_y)
+    local factor = (string.len(text)) / 370
+    DrawRect(_x,_y+0.0125, 0.015+ factor, 0.03, 41, 11, 41, 68)
+end
+
+Citizen.CreateThread(function()
+    while true do
+        local idle = 1000
+        local ped = PlayerPedId()
+        local pCoords = GetEntityCoords(ped)
+
+        for _, localPonto in pairs(pontoLocais) do
+            local distance = #(pCoords - vector3(localPonto.x, localPonto.y, localPonto.z))
+            
+            if distance <= 5.0 then
+                idle = 5
+                DrawText3D(localPonto.x, localPonto.y, localPonto.z, "~g~[E]~w~ PARA BATER "..localPonto.text)
+                
+                if distance <= 1.5 then
+                    if IsControlJustPressed(0, 38) then -- Tecla E
+                        TriggerServerEvent("ponto:trocar")
+                    end
+                end
+            end
+        end
+        Citizen.Wait(idle)
+    end
+end)

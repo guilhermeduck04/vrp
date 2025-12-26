@@ -545,3 +545,67 @@ RegisterCommand('sequestro',function(source,args,rawCommand)
 		end
 	end
 end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- SISTEMA DE PONTO COM LIMPEZA (SERVER)
+-----------------------------------------------------------------------------------------------------------------------------------------
+local cfgGroups = module("vrp", "Config/Groups")
+local groups = cfgGroups.groups
+
+-- Mapa de exceções (Caso o nome do Paisana não seja apenas "Paisana" + Cargo)
+local paisana_map = {
+    ["LiderMecanico"] = "PaisanaMecanicoLider",
+    ["PaisanaMecanicoLider"] = "LiderMecanico",
+}
+
+RegisterServerEvent("ponto:trocar")
+AddEventHandler("ponto:trocar", function()
+    local source = source
+    local user_id = vRP.getUserId(source)
+    
+    if user_id then
+        local user_groups = vRP.getUserGroups(user_id)
+        local trocou = false
+
+        for k,v in pairs(user_groups) do
+            local groupData = groups[k]
+            
+            -- Verifica se é um cargo de trabalho (Job)
+            if groupData and groupData._config and groupData._config.gtype == "job" then
+                
+                -- SITUAÇÃO 1: ESTÁ DE FOLGA -> QUER TRABALHAR
+                if string.sub(k, 1, 7) == "Paisana" then
+                    local jobOriginal = string.sub(k, 8) -- Remove "Paisana" do nome
+                    if paisana_map[k] then jobOriginal = paisana_map[k] end -- Checa exceções
+
+                    if groups[jobOriginal] then
+                        vRP.addUserGroup(user_id, jobOriginal)
+                        TriggerClientEvent("Notify", source, "sucesso", "Você <b>ENTROU</b> em serviço como "..vRP.getGroupTitle(jobOriginal)..".")
+                        trocou = true
+                        break
+                    end
+                
+                -- SITUAÇÃO 2: ESTÁ TRABALHANDO -> QUER FOLGA (LIMPAR ARMAS)
+                else
+                    local jobPaisana = "Paisana"..k
+                    if paisana_map[k] then jobPaisana = paisana_map[k] end -- Checa exceções
+
+                    if groups[jobPaisana] then
+                        vRP.addUserGroup(user_id, jobPaisana)
+                        
+                        -- !!! AQUI ACONTECE A LIMPEZA DE ARMAS !!!
+                        vRPclient.replaceWeapons(source, {}) 
+                        
+                        TriggerClientEvent("Notify", source, "aviso", "Você <b>SAIU</b> de serviço. Suas armas foram guardadas.")
+                        trocou = true
+                        break
+                    end
+                end
+            end
+        end
+
+        if not trocou then
+            TriggerClientEvent("Notify", source, "negado", "Você não possui um cargo configurado para bater ponto aqui.")
+        end
+    end
+end)

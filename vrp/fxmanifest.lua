@@ -1,4 +1,7 @@
 fx_version "bodacious"
+
+dependency 'oxmysql'
+
 game "gta5"
 
 ui_page_preload "yes"

@@ -515,3 +515,59 @@ AddEventHandler("admin:resetSpectate",function()
 		NetworkSetInSpectatorMode(false)
 	end
 end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- ADMIN BLIPS (Wallhack Otimizado)
+-----------------------------------------------------------------------------------------------------------------------------------------
+local blips = {}
+local showingBlips = false
+
+RegisterNetEvent("admin:toggleBlips")
+AddEventHandler("admin:toggleBlips", function()
+    showingBlips = not showingBlips
+    if not showingBlips then
+        -- Limpa os blips ao desligar
+        for _, blip in pairs(blips) do
+            RemoveBlip(blip)
+        end
+        blips = {}
+        TriggerEvent("Notify", "aviso", "Blips DESATIVADOS.")
+    else
+        TriggerEvent("Notify", "sucesso", "Blips ATIVADOS.")
+    end
+end)
+
+Citizen.CreateThread(function()
+    while true do
+        if showingBlips then
+            -- Loop mais lento (1 segundo) para atualizar posições, economiza MUITO FPS
+            for _, player in ipairs(GetActivePlayers()) do
+                local ped = GetPlayerPed(player)
+                local blip = blips[player]
+
+                if not DoesBlipExist(blip) then
+                    blip = AddBlipForEntity(ped)
+                    SetBlipSprite(blip, 1)
+                    SetBlipScale(blip, 0.85)
+                    SetBlipShowCone(blip, true)
+                    blips[player] = blip
+                end
+
+                SetBlipRotation(blip, math.ceil(GetEntityHeading(ped)))
+                
+                -- Cor do Blip: Azul para Civis, Vermelho para Armados (Exemplo)
+                if IsPedArmed(ped, 4) then
+                    SetBlipColour(blip, 1) -- Vermelho
+                else
+                    SetBlipColour(blip, 0) -- Branco
+                end
+                
+                -- Mostra o nome no mapa
+                BeginTextCommandSetBlipName("STRING")
+                AddTextComponentString(GetPlayerName(player))
+                EndTextCommandSetBlipName(blip)
+            end
+        end
+        Citizen.Wait(1000)
+    end
+end)

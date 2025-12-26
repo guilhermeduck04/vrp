@@ -73,6 +73,8 @@ function vRP.registerDBDriver(name,on_init,on_prepare,on_query)
 	end
 end
 
+local db_driver = module("vrp", "Lib/Oxmysql")
+
 function vRP.format(n)
 	local left,num,right = string.match(n,'^([^%d]*%d)(%d*)(.-)$')
 	return left..(num:reverse():gsub('(%d%d%d)','%1.'):reverse())..right

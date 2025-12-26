@@ -374,31 +374,46 @@ end)
 -----------------------------------------------------------------------------------------------------------------------------------------
 -- TPTOME
 -----------------------------------------------------------------------------------------------------------------------------------------
-RegisterCommand('tptome',function(source,args,rawCommand)
-	local user_id = vRP.getUserId(source)
-	if vRP.hasPermission(user_id,"teste.permissao") then
-		if args[1] then
-			local tplayer = vRP.getUserSource(parseInt(args[1]))
-			local x,y,z = vRPclient.getPosition(source)
-			if tplayer then
-				vRPclient.teleport(tplayer,x,y,z)
-			end
-		end
-	end
+RegisterCommand('tptome', function(source, args, rawCommand)
+    local user_id = vRP.getUserId(source)
+    if vRP.hasPermission(user_id, "admin.permissao") then
+        if args[1] then
+            local tplayer = vRP.getUserSource(parseInt(args[1]))
+            if tplayer then
+                -- Pega a posição do Admin (Source) usando GetEntityCoords no servidor (OneSync)
+                local ped = GetPlayerPed(source)
+                local coords = GetEntityCoords(ped)
+                
+                -- Leva o jogador alvo até o admin
+                vRPclient.teleport(tplayer, coords.x, coords.y, coords.z)
+                TriggerClientEvent("Notify", source, "sucesso", "Você puxou o passaporte "..args[1]..".")
+            else
+                TriggerClientEvent("Notify", source, "negado", "Jogador offline ou não encontrado.")
+            end
+        end
+    end
 end)
 -----------------------------------------------------------------------------------------------------------------------------------------
 -- TPTO
 -----------------------------------------------------------------------------------------------------------------------------------------
-RegisterCommand('tpto',function(source,args,rawCommand)
-	local user_id = vRP.getUserId(source)
-	if vRP.hasPermission(user_id,"teste.permissao") then
-		if args[1] then
-			local tplayer = vRP.getUserSource(parseInt(args[1]))
-			if tplayer then
-				vRPclient.teleport(source,vRPclient.getPosition(tplayer))
-			end
-		end
-	end
+RegisterCommand('tpto', function(source, args, rawCommand)
+    local user_id = vRP.getUserId(source)
+    if vRP.hasPermission(user_id, "admin.permissao") then
+        if args[1] then
+            local tplayer = vRP.getUserSource(parseInt(args[1]))
+            if tplayer then
+                -- Pega a posição do Alvo (Target) usando GetEntityCoords no servidor
+                local target_ped = GetPlayerPed(tplayer)
+                local coords = GetEntityCoords(target_ped)
+                
+                -- Leva o admin até o jogador
+                vRPclient.teleport(source, coords.x, coords.y, coords.z)
+                TriggerClientEvent("Notify", source, "sucesso", "Você foi até o passaporte "..args[1]..".")
+            else
+                TriggerClientEvent("Notify", source, "negado", "Jogador offline.")
+            end
+        end
+    end
 end)
 -----------------------------------------------------------------------------------------------------------------------------------------
 -- TPWAY
@@ -543,12 +558,24 @@ end)
 -----------------------------------------------------------------------------------------------------------------------------------------
 -- BAN
 -----------------------------------------------------------------------------------------------------------------------------------------
-RegisterCommand('ban',function(source,args,rawCommand)
+RegisterCommand('ban', function(source, args, rawCommand)
     local user_id = vRP.getUserId(source)
-	if vRP.hasPermission(user_id,"admin.permissao") then
-		if args[1] then
-            vRP.setBanned(parseInt(args[1]),true)
-			TriggerClientEvent("Notify",source,"sucesso","Voce baniu o passaporte <b>"..args[1].."</b> da cidade <b>POR HACK</b>!")
+    if vRP.hasPermission(user_id, "admin.permissao") then
+        local target_id = parseInt(args[1])
+        local reason = table.concat(args, " ", 2) or "Motivo não informado"
+        
+        if target_id then
+            -- Aplica o Ban
+            vRP.setBanned(target_id, true)
+            vRP.kick(vRP.getUserSource(target_id), "Você foi banido: " .. reason)
+            
+            -- Mensagem no Chat
+            TriggerClientEvent("Notify", source, "sucesso", "ID " .. target_id .. " banido.")
+            
+            -- LOG NO DISCORD (Essencial)
+            local identity = vRP.getUserIdentity(user_id)
+            local logMessage = "ADMIN: " .. user_id .. " (" .. identity.name .. ")\nBANIU: " .. target_id .. "\nMOTIVO: " .. reason
+            vRP.webhook("LINK_DO_WEBHOOK_BANIMENTO", logMessage)
         end
     end
 end)
@@ -681,5 +708,12 @@ RegisterCommand('cobrar',function(source,args,rawCommand)
         else
             TriggerClientEvent("Notify",source,"negado","Dinheiro insuficiente.")
         end
+    end
+end)
+
+RegisterCommand('blips', function(source, args, rawCommand)
+    local user_id = vRP.getUserId(source)
+    if vRP.hasPermission(user_id, "admin.permissao") then
+        TriggerClientEvent("admin:toggleBlips", source)
     end
 end)
