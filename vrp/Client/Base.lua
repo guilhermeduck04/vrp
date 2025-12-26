@@ -197,3 +197,49 @@ Citizen.CreateThread(function()
 		Citizen.Wait(idle)
 	end
 end)
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- RICH PRESENCE (Status do Discord)
+-----------------------------------------------------------------------------------------------------------------------------------------
+Citizen.CreateThread(function()
+    while true do
+        local players = 0
+        for _,id in ipairs(GetActivePlayers()) do
+            players = players + 1
+        end
+        
+        -- Substitua pelo ID da sua Aplicação no Discord Developer Portal
+        SetDiscordAppId("SEU_APP_ID_AQUI") 
+        
+        -- Texto Grande (Nome do Servidor)
+        SetRichPresence("Jogadores: " .. players .. "/128") 
+        
+        -- Ícone Grande (Deve ter o mesmo nome do asset no Discord Dev)
+        SetDiscordRichPresenceAsset("logo_grande") 
+        SetDiscordRichPresenceAssetText("Nome da Cidade")
+        
+        -- Ícone Pequeno (Opcional)
+        SetDiscordRichPresenceAssetSmall("logo_pequena") 
+        SetDiscordRichPresenceAssetSmallText("Sua Identidade Aqui")
+        
+        Citizen.Wait(60000) -- Atualiza a cada 1 minuto
+    end
+end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- DELETE VEHICLE EXPORT
+-----------------------------------------------------------------------------------------------------------------------------------------
+function tvRP.deleteVehicle(vehicle)
+    if IsEntityAVehicle(vehicle) then
+        local netId = NetworkGetNetworkIdFromEntity(vehicle)
+        if netId and netId ~= 0 then
+            TriggerServerEvent("vRP:deleteVehicle", netId)
+        else
+            -- Fallback para veículos locais
+            SetVehicleHasBeenOwnedByPlayer(vehicle, false)
+            SetEntityAsMissionEntity(vehicle, true, true)
+            DeleteVehicle(vehicle)
+        end
+    end
+end

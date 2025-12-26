@@ -27,14 +27,34 @@ end
 -----------------------------------------------------------------------------------------------------------------------------------------
 -- THREAD THIRST/
 -----------------------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- THREAD THIRST/HUNGER COM DANO
+-----------------------------------------------------------------------------------------------------------------------------------------
 Citizen.CreateThread(function()
-	while true do
-		Citizen.Wait(80000)
-		for k,v in pairs(vRP.users) do
-			vRP.downgradeThirst(v,1)
-			vRP.downgradeHunger(v,1)
-		end
-	end
+    while true do
+        Citizen.Wait(60000) -- Verifica a cada 60 segundos (otimizado)
+        for k,v in pairs(vRP.users) do
+            local source = vRP.getUserSource(v)
+            if source then
+                -- Reduz fome e sede
+                vRP.downgradeThirst(v,1)
+                vRP.downgradeHunger(v,1)
+
+                -- Verifica se zerou e aplica dano
+                local data = vRP.getUserDataTable(v)
+                if data then
+                    if data.hunger <= 0 or data.thirst <= 0 then
+                        -- Pega a vida atual
+                        local currentHealth = vRPclient.getHealth(source)
+                        if currentHealth > 101 then -- 101 é considerado "morto" ou quase morto em algumas builds, 0 em outras. Geralmente ped morre em 100.
+                            vRPclient.setHealth(source, currentHealth - 10) -- Tira 10 de vida
+                            TriggerClientEvent("Notify",source,"aviso","Você está sentindo dores fortes de fome/sede.")
+                        end
+                    end
+                end
+            end
+        end
+    end
 end)
 -----------------------------------------------------------------------------------------------------------------------------------------
 -- UPDAGRADETHIRST

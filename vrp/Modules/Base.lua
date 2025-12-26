@@ -26,6 +26,25 @@ local cached_queries = {}
 local prepared_queries = {}
 local db_initialized = false
 
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- WEBHOOK SYSTEM
+-----------------------------------------------------------------------------------------------------------------------------------------
+function vRP.webhook(url, message)
+    if url == nil or url == "" then return end
+    PerformHttpRequest(url, function(err, text, headers) end, 'POST', json.encode({
+        content = message
+    }), { ['Content-Type'] = 'application/json' })
+end
+
+function vRP.log(file, info)
+    file = io.open(file, "a")
+    if file then
+        file:write(os.date("%d/%m/%Y %H:%M:%S") .. " -> " .. info .. "\n")
+        file:close()
+    end
+end
+
 -----------------------------------------------------------------------------------------------------------------------------------------
 -- VRP.REQUEST
 -----------------------------------------------------------------------------------------------------------------------------------------
@@ -179,13 +198,17 @@ function vRP.getUserTmpTable(user_id)
 end
 
 function vRP.getUserId(source)
-	if source ~= nil then
-		local ids = GetPlayerIdentifiers(source)
-		if ids ~= nil and #ids > 0 then
-			return vRP.users[ids[1]]
-		end
-	end
-	return nil
+    if source ~= nil then
+        local ids = GetPlayerIdentifiers(source)
+        if ids ~= nil and #ids > 0 then
+            for _, id in ipairs(ids) do
+                if vRP.users[id] then
+                    return vRP.users[id]
+                end
+            end
+        end
+    end
+    return nil
 end
 
 function vRP.getUserSource(user_id)
@@ -222,11 +245,15 @@ function vRP.dropPlayer(source)
 end
 
 function task_save_datatables()
-	SetTimeout(60000,task_save_datatables)
-	TriggerEvent("vRP:save")
-	for k,v in pairs(vRP.user_tables) do
-		vRP.setUData(k,"vRP:datatable",json.encode(v))
-	end
+    SetTimeout(60000, task_save_datatables) -- Mantém o loop de 60 segundos
+    TriggerEvent("vRP:save")
+    
+    Citizen.CreateThread(function() -- Cria uma thread separada para não travar o servidor
+        for k,v in pairs(vRP.user_tables) do
+            vRP.setUData(k, "vRP:datatable", json.encode(v))
+            Citizen.Wait(100) -- Espera 100ms entre cada save. Isso elimina o lag spike.
+        end
+    end)
 end
 
 async(function()
@@ -247,7 +274,9 @@ AddEventHandler("queue:playerConnecting",function(source,ids,name,setKickReason,
 			if vRP.rusers[user_id] == nil then
 				local sdata = vRP.getUData(user_id,"vRP:datatable")
 
-				vRP.users[ids[1]] = user_id
+				for _, id in ipairs(ids) do
+    			vRP.users[id] = user_id
+				end
 				vRP.rusers[user_id] = ids[1]
 				vRP.user_tables[user_id] = {}
 				vRP.user_tmp_tables[user_id] = {}
@@ -306,4 +335,37 @@ AddEventHandler("vRPcli:playerSpawned",function()
 		end
 		TriggerEvent("vRP:playerSpawn",user_id,source,first_spawn)
 	end
+end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- DELETE VEHICLE (Server-Side para OneSync)
+-----------------------------------------------------------------------------------------------------------------------------------------
+RegisterServerEvent("vRP:deleteVehicle")
+AddEventHandler("vRP:deleteVehicle", function(netId)
+    local source = source
+    if netId then
+        local entity = NetworkGetEntityFromNetworkId(netId)
+        if DoesEntityExist(entity) then
+            DeleteEntity(entity)
+        end
+    end
+end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- EXPORTS (Compatibilidade com scripts modernos)
+-----------------------------------------------------------------------------------------------------------------------------------------
+exports("getUserId", function(source)
+    return vRP.getUserId(source)
+end)
+
+exports("getUserSource", function(user_id)
+    return vRP.getUserSource(user_id)
+end)
+
+exports("hasPermission", function(user_id, perm)
+    return vRP.hasPermission(user_id, perm)
+end)
+
+exports("getBankMoney", function(user_id)
+    return vRP.getBankMoney(user_id)
 end)

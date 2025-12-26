@@ -13,37 +13,48 @@ function tvRP.toggleNoclip()
 end
 
 Citizen.CreateThread(function()
-	while true do
-		local idle = 1000
-		if noclip then
-			idle = 1
-			local ped = PlayerPedId()
-			local x,y,z = tvRP.getPosition()
-			local dx,dy,dz = tvRP.getCamDirection()
-			local speed = 1.0
+    while true do
+        local idle = 1000
+        if noclip then
+            idle = 1
+            local ped = PlayerPedId()
+            local entity = ped
+            
+            -- Se estiver em um veículo, move o veículo junto
+            if IsPedInAnyVehicle(ped, false) then
+                entity = GetVehiclePedIsUsing(ped)
+            end
 
-			SetEntityVelocity(ped,0.0001,0.0001,0.0001)
+            local x,y,z = tvRP.getPosition()
+            local dx,dy,dz = tvRP.getCamDirection()
+            local speed = 1.0
 
-			if IsControlPressed(0,21) then
-				speed = 5.0
-			end
+            -- Trava a velocidade física para não cair
+            SetEntityVelocity(entity, 0.0001, 0.0001, 0.0001)
 
-			if IsControlPressed(0,32) then
-				x = x+speed*dx
-				y = y+speed*dy
-				z = z+speed*dz
-			end
+            if IsControlPressed(0,21) then -- Shift (Mais rápido)
+                speed = 5.0
+            end
+            if IsControlPressed(0,19) then -- Alt (Mais lento)
+                speed = 0.1
+            end
 
-			if IsControlPressed(0,269) then
-				x = x-speed*dx
-				y = y-speed*dy
-				z = z-speed*dz
-			end
+            if IsControlPressed(0,32) then -- W
+                x = x+speed*dx
+                y = y+speed*dy
+                z = z+speed*dz
+            end
 
-			SetEntityCoordsNoOffset(ped,x,y,z,true,true,true)
-		end
-		Citizen.Wait(idle)
-	end
+            if IsControlPressed(0,269) then -- S
+                x = x-speed*dx
+                y = y-speed*dy
+                z = z-speed*dz
+            end
+
+            SetEntityCoordsNoOffset(entity, x, y, z, true, true, true)
+        end
+        Citizen.Wait(idle)
+    end
 end)
 
 local handcuffed = false
@@ -223,4 +234,13 @@ Citizen.CreateThread(function()
 		end
 		Citizen.Wait(idle)
 	end
+end)
+
+
+exports("isHandcuffed", function()
+    return handcuffed
+end)
+
+exports("isCapuz", function()
+    return capuz
 end)

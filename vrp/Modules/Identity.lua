@@ -97,3 +97,18 @@ AddEventHandler("vRP:playerJoin",function(user_id,source,name)
 		end
 	end
 end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- EXPORTS (Compatibilidade com scripts externos)
+-----------------------------------------------------------------------------------------------------------------------------------------
+exports("getUserIdentity", function(user_id)
+    return vRP.getUserIdentity(user_id)
+end)
+
+exports("getUserByRegistration", function(registration)
+    return vRP.getUserByRegistration(registration)
+end)
+
+exports("getUserByPhone", function(phone)
+    return vRP.getUserByPhone(phone)
+end)

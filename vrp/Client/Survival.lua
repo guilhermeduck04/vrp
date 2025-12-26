@@ -40,3 +40,14 @@ function tvRP.killGod()
 	ClearPedTasks(ped)
 	ClearPedSecondaryTask(ped)
 end
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- EXPORTS
+-----------------------------------------------------------------------------------------------------------------------------------------
+exports("getHealth", function()
+    return GetEntityHealth(PlayerPedId())
+end)
+
+exports("setHealth", function(amount)
+    SetEntityHealth(PlayerPedId(), parseInt(amount))
+end)

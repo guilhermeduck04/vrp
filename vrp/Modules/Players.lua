@@ -9,10 +9,10 @@ AddEventHandler("vRP:playerSpawn",function(user_id,source,first_spawn)
 	if first_spawn then
 		local colete = data.colete
 		SetTimeout(10000,function()
-			if data.colete then
-				source = vRP.getUserSource(user_id)
-				if(source~=nil)then
-					vRPclient.setArmour(source,colete)
+			if data.colete and data.colete > 0 then -- Verifique se é > 0
+				local source = vRP.getUserSource(user_id)
+				if source then
+					vRPclient.setArmour(source,data.colete)
 				end
 			end
 		end)

@@ -147,6 +147,19 @@ function vRP.Try(user_id,amount)
 	end
 	return false
 end
+
+function vRP.tryFullPayment(user_id, amount)
+    if amount < 0 then return false end
+    
+    local money = vRP.getMoney(user_id)
+    -- Tenta pagar com dinheiro da mão primeiro
+    if money >= amount then
+        return vRP.TryCarteira(user_id, amount)
+    else
+        -- Se não tiver na mão, tenta pagar com o banco
+        return vRP.TryBank(user_id, amount)
+    end
+end
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- SISTEMA
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -176,4 +189,35 @@ AddEventHandler("vRP:save",function()
 			vRP.execute("vRP/set_money",{ user_id = k, wallet = v.wallet, bank = v.bank, gemas = v.gemas })
 		end
 	end
+end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- SISTEMA DE SALÁRIO
+-----------------------------------------------------------------------------------------------------------------------------------------
+local cfg = module("Config/Groups") 
+local groups = cfg.groups
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(60 * 60 * 1000) -- Executa a cada 60 minutos (1 hora)
+        
+        local users = vRP.getUsers()
+        for user_id,source in pairs(users) do
+            local salary = 0
+            local user_groups = vRP.getUserGroups(user_id)
+            
+            -- Verifica todos os grupos do jogador para somar salários
+            for group,active in pairs(user_groups) do
+                if active and groups[group] and groups[group]._config and groups[group]._config.salario then
+                    salary = salary + groups[group]._config.salario
+                end
+            end
+
+            -- Se tiver salário para receber
+            if salary > 0 then
+                vRP.giveBankMoney(user_id, salary)
+                TriggerClientEvent("Notify", source, "sucesso", "Você recebeu seu salário de <b>$"..vRP.format(salary).."</b>.")
+            end
+        end
+    end
 end)

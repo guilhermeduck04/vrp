@@ -125,17 +125,24 @@ end
 
 function vRP.getInventoryMaxWeight(user_id)
 	local data = vRP.getUserDataTable(user_id)
-	local mochila = data.mochila
 	if data then
-		if user_id then
-			if addPeso[user_id] == nil then
-				addPeso[user_id] = 0
-			end
-
-			return 10+tonumber(addPeso[user_id])+30*tonumber(mochila.quantidade)
+		local mochila = data.mochila
+		-- Proteção contra nil no addPeso e na mochila
+		local bonusPeso = 0
+		if addPeso[user_id] then 
+			bonusPeso = tonumber(addPeso[user_id]) 
 		end
+		
+		local qtdMochila = 0
+		if mochila and mochila.quantidade then
+			qtdMochila = tonumber(mochila.quantidade)
+		end
+
+		return 10 + bonusPeso + (30 * qtdMochila)
 	end
+	return 10 -- Retorno padrão caso não ache dados
 end
+
 
 function vRP.parseItem(idname)
 	return splitString(idname,"|")
@@ -364,4 +371,38 @@ end)
 
 exports("getCooldown", function(...)
     return cooldown:get(...)
+end)
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- SWAP SLOT (Mover itens)
+-----------------------------------------------------------------------------------------------------------------------------------------
+function vRP.swapSlot(user_id, slot_from, slot_to)
+    local data = vRP.getUserDataTable(user_id)
+    if data and data.inventory then
+        local inventory = data.inventory
+        slot_from = tostring(slot_from)
+        slot_to = tostring(slot_to)
+
+        local from_item = inventory[slot_from]
+        local to_item = inventory[slot_to]
+
+        if from_item then
+            -- Se o slot de destino já tem item, inverte eles
+            if to_item then
+                inventory[slot_from] = to_item
+                inventory[slot_to] = from_item
+            else
+                -- Se não tem, apenas move e limpa o antigo
+                inventory[slot_to] = from_item
+                inventory[slot_from] = nil
+            end
+            return true
+        end
+    end
+    return false
+end
+
+-- Export para scripts externos usarem
+exports("swapSlot", function(user_id, from, to)
+    return vRP.swapSlot(user_id, from, to)
 end)
