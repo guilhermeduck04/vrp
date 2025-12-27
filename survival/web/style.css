@@ -1,0 +1,172 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+@font-face {
+    font-family: 'loretto';
+    src: url('fonts/loretto-regular-webfont.woff2');
+}
+
+body {
+    display: none;
+    width: 100%;
+    height: 100vh;
+    font-family: 'loretto';
+    background: url(bg.png);
+}
+
+#container {
+
+    width: 100%;
+    height: 100vh;
+    background: url(images/bg.png);
+    background-size: 100% 100%;
+
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.content-progress {
+    width: 15.63vw;
+    position: absolute;
+    bottom: 4.17vw;
+    color: #fff;
+    text-align: center;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notify {
+    color: #fff;
+    width: 11.82vw;
+    height: 4.17vw;
+    background: #0F1128;
+    border-radius: 0.21vw;
+    font-size: 0.68vw;
+    padding: 0.83vw;
+    border-radius: 0.21vw;
+
+    position: absolute;
+    right: 5.21vw;
+    top: 2.24vw;
+}
+
+/* .icon-notify {
+
+    width: 2.14vw;
+    height: 2.14vw;
+    position: absolute;
+    background: #4154F6;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+    right: -0.52vw;
+    top: -0.52vw;
+
+} */
+
+.progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    animation: animate 10s ease-in-out infinite;
+}
+
+@keyframes animate {
+    0% {
+        stroke-dasharray: 1000 0;
+    }
+
+    100% {
+        stroke-dasharray: 0 1000;
+
+    }
+}
+
+
+.content-progress svg {
+    width: 17.71vw;
+    position: absolute;
+    top: -3.65vw;
+    left: -1.04vw;
+}
+
+.content-progress p {
+    position: absolute;
+    bottom: -2.08vw;
+    text-align: center;
+}
+
+.content-progress b {
+    color: #4154F6;
+}
+
+.section {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.section2 {
+    display: none;
+}
+
+
+.tumtumTop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    animation: animate2 10s ease-in-out infinite;
+}
+
+
+
+.tumtumBottom {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    animation: animate3 10s ease-in-out infinite;
+}
+
+@keyframes animate2 {
+    0% {
+        stroke-dasharray: 1800 0;
+    }
+
+    100% {
+        stroke-dasharray: 0 1800;
+
+    }
+}
+
+@keyframes animate3 {
+    0% {
+        stroke-dasharray: 0 1800;
+    }
+
+    100% {
+        stroke-dasharray: 1800 0;
+
+    }
+}
+
+
+.text {
+    width: 46.88vw;
+}
+
+.letter {
+    width: 31.25vw;
+}
